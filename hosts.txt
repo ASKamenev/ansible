@@ -1,5 +1,2 @@
 [Zabbix-servers]
-192.168.1.1
-192.168.1.2
-192.168.1.3
-
+timeweb.cf  ansible_python_interpreter=/usr/bin/python3
