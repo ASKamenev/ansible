@@ -4,19 +4,32 @@
   hosts: all
   become: yes
 
+  vars:
+    apache_vhost: ./config/zabbix.conf
+    zabbix_conf: ./config/zabbix.conf.d
+
   tasks:
 
-  - name: Install Zabbix server + Proxy + UI + PostgreSQL
-    apt: "name=zabbix-server-pgsql,apache2 state=latest install_recommends=yes"
+  - name: Install Zabbix + PGSQL + Httpd + PHP
+    apt: "name=zabbix-server-pgsql,zabbix-frontend-php state=latest install_recommends=yes"
+
+  - name: Configuring Apache2
+    copy: src={{ apache_vhost }} dest=/etc/apache2/sites-available/
+    shell:
+      cmd: ln -s /etc/apache2/sites-available/zabbix.conf /etc/apache2/sites-enabled/
+    notify: Restart Apache
+
+  - name: Configuring Zabbix-server
+    copy: src={{ zabbix_conf }} dest=/etc/zabbix/
+    notify: Restart Zabbix
 
 
-  - name: Start and enable services
-    service:
-      name: "{{ item }}"
-      state: started
-      enabled: true
-    loop:
-      - apache2
-      - zabbix-server
-      - postgresql 
 
+  handlers:
+   
+  - name: Restart Apache
+    service: name=apache2 state=restarted enabled=true 
+
+    
+  - name: Restart Zabbix
+    service: name=zabbix-server state=restarted enabled=true
