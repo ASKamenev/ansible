@@ -6,24 +6,56 @@
 
   vars:
     apache_vhost: ./config/zabbix.conf
-    zabbix_conf: ./config/zabbix.conf.d
+    zabbix_conf: ./config/zabbix_server.conf
 
   tasks:
 
   - name: Install Zabbix + PGSQL + Httpd + PHP
-    apt: "name=zabbix-server-pgsql,zabbix-frontend-php state=latest install_recommends=yes"
+    apt: "name=zabbix-server-pgsql,zabbix-frontend-php,postgresql,python-pip  state=latest install_recommends=yes"
+    
+  - name: Install psycopg2  
+    shell: "pip install psycopg2"
 
   - name: Configuring Apache2
     copy: src={{ apache_vhost }} dest=/etc/apache2/sites-available/
-    shell:
-      cmd: ln -s /etc/apache2/sites-available/zabbix.conf /etc/apache2/sites-enabled/
+  
+  - name: Simlink to apache2
+    file:
+      src: /etc/apache2/sites-available/zabbix.conf
+      dest: /etc/apache2/sites-enabled/zabbix.conf
+      state: link
+      force: true
     notify: Restart Apache
 
   - name: Configuring Zabbix-server
     copy: src={{ zabbix_conf }} dest=/etc/zabbix/
     notify: Restart Zabbix
+ 
+  - name: Adding zabbix user to PostgreSQL
+    #become: true
+    become_user: postgres
+    postgresql_user:
+       name: zabbix
+       password: otoo=H3A
+       encrypted: yes
 
+       # - name: Unpack sql dump
+       #shell: "gzip -d /usr/share/doc/zabbix-server-pgsql/create.sql.gz"
 
+  - name: Create zabbix DB
+    become_user: postgres
+    postgresql_db:
+       name: zabbix
+       owner: zabbix  
+
+  - name: Load dump to zabbix database  
+    postgresql_db:
+       name: zabbix
+       login_host: 127.0.0.1
+       login_user: zabbix
+       login_password: otoo=H3A 
+       state: dump
+       target: /usr/share/doc/zabbix-server-pgsql/create.sql  
 
   handlers:
    
