@@ -7,7 +7,8 @@
   vars:
     apache_vhost: ./config/zabbix.conf
     zabbix_conf: ./config/zabbix_server.conf
-    zbbix_proxy_conf: ./config/zabbix_proxy.conf
+    zabbix_proxy_conf: ./config/zabbix_proxy.conf
+    zabbix_gui_conf: ./config/zabbix.conf.php
 
   tasks:
   
@@ -16,7 +17,6 @@
    
   - name: Install Services on Debian like OS
     apt: "name={{ item }} state=latest install_recommends=yes"
-    #name=zabbix-server-pgsql,zabbix-frontend-php,php7.2-pgsql,zabbix-apache-conf,zabbix-agent,python-pip,postgresql,zabbix-proxy state=latest install_recommends=yes
     loop:
       - postgresql
       - zabbix-server-pgsql
@@ -39,16 +39,19 @@
       dest: /etc/apache2/sites-enabled/zabbix.conf
       state: link
       force: true
-      #notify: Restart Apache2  
+    notify: Restart Apache2 
+
+  - name: Configuring Zabbix-gui
+    copy: src={{ zabbix_gui_conf }} dest=/usr/share/zabbix/conf/
 
   - name: Configuring Zabbix-server
     copy: src={{ zabbix_conf }} dest=/etc/zabbix/
-    #notify: Restart Zabbix-server
+    notify: Restart Zabbix-server
   
   - name: Configuring Zabbix-proxy
-    copy: src={{ zbbix_proxy_conf }} dest=/etc/zabbix/
-    # notify: Restart Zabbix-server
-
+    copy: src={{ zabbix_proxy_conf }} dest=/etc/zabbix/
+    notify: Restart Zabbix-proxy
+ 
   - name: Adding zabbix user to PostgreSQL
     become_user: postgres
     postgresql_user:
@@ -86,31 +89,25 @@
        state: restore
        target: /usr/share/doc/zabbix-proxy-pgsql/schema.sql       
  
-  - name: Final restarting services
-    service: "name={{ item }} state=restarted"
-    loop:
-       - apache2
-       - zabbix-server
-       - zabbix-proxy
 
   handlers:
 
   - name: Restart Apache2
     service: 
       name: apache2 
-      state: start 
+      state: restarted 
       enabled: yes
 
   - name: Restart Zabbix-server
     service: 
       name: zabbix-server 
-      state: started 
+      state: restarted
       enabled: yes
 
   - name: Restart Zabbix-proxy
     service: 
       name: zabbix-proxy
-      state: started
+      state: restarted
       enabled: yes
 
   - name: Install psycopg2
