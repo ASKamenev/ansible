@@ -96,13 +96,22 @@
   handlers:
 
   - name: Restart Apache2
-    service: name=apache2 state=starte enabled=yes
+    service: 
+      name: apache2 
+      state: start 
+      enabled: yes
 
   - name: Restart Zabbix-server
-    service: name=zabbix-server state=starte enabled=yes
+    service: 
+      name: zabbix-server 
+      state: started 
+      enabled: yes
 
   - name: Restart Zabbix-proxy
-    service: name=zabbix-proxy state=starte enabled=yes
+    service: 
+      name: zabbix-proxy
+      state: started
+      enabled: yes
 
   - name: Install psycopg2
     shell: "pip install psycopg2"  
